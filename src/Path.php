@@ -65,19 +65,19 @@ class Path
         return $this;
     }
 
-    public function realPath(string $path = null)
+    public function real(string $path = null)
     {
         return realpath($this->get($path));
     }
 
     public function __toString()
     {
-        return $this->realPath();
+        return $this->real();
     }
 
     public function __get(string $path)
     {
-        return $this->realPath($path);
+        return $this->real($path);
     }
 
     public function __set(string $shortcut, string $path)

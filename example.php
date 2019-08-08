@@ -1,11 +1,5 @@
-# Path
-
-Path is a very simple library for registering filesystem path shortcuts.
-
-## Use
-
-```php
-require 'vendor/autoload.php'; // Or wherever the autoloader is
+<?php
+require 'vendor/autoload.php'; // require autoloader
 
 // you can pass the root directory to the constructor
 $path = new Eddy\Path\Path(__DIR__);
@@ -30,5 +24,3 @@ var_dump("The root directory is {$path}");
 // Also provided are magic __get and __set methods for setting shortcuts like properties.
 $path->vendor = 'vendor';
 var_dump($path->real('vendor')); // returns equal to realpath(__DIR__ . '/vendor');
-
-```

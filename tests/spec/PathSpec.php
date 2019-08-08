@@ -45,7 +45,7 @@ class PathSpec extends ObjectBehavior
     function it_can_register_a_path_relative_to_root_dir()
     {
         $this->register('tests/spec', 'spec');
-        $this->realPath('spec')->shouldReturn(dirname(__FILE__));
+        $this->real('spec')->shouldReturn(dirname(__FILE__));
     }
 
     function it_can_be_used_as_root_dir_string()
