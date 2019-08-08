@@ -1,0 +1,29 @@
+{
+    "name": "simoneddy/path",
+    "description": " ",
+    "type": "library",
+    "license": "MIT",
+    "config": {
+        "bin-dir": "bin"
+    },
+    "authors": [
+        {
+            "name": "Simon Eddy",
+            "email": "simon@simoneddy.com.au"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Eddy\\Path\\": "src"
+        }
+    },
+    "require": {
+        "php": ">=7.1"
+    },
+    "require-dev": {
+        "symfony/var-dumper": "^4.3",
+        "phpspec/phpspec": "^5.1"
+    }
+}

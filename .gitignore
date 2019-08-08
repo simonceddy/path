@@ -1,0 +1,6 @@
+/vendor/
+.env
+/.vscode/
+.DS_Store
+/bin/
+/testing.php

@@ -1,0 +1,8 @@
+suites:
+  default:
+    psr4_prefix:  Eddy\Path
+    namespace:    Eddy\Path
+    spec_path:    tests
+    src_path:     src
+
+formatter.name:   pretty
