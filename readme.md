@@ -42,3 +42,7 @@ $path->vendor = 'vendor';
 var_dump($path->real('vendor')); // returns equal to realpath(__DIR__ . '/vendor');
 
 ```
+
+## Todo:
+
+- add comments...
