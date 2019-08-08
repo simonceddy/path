@@ -18,8 +18,8 @@ class Path
     private function locateRootDir()
     {
         $dir = dirname(__DIR__);
-        while (!file_exists($dir . '/composer.json')
-            && !file_exists($dir . '/vendor/autoload.php')
+        while ((!file_exists($dir . '/composer.json')
+            || !file_exists($dir . '/vendor/autoload.php'))
             && $dir !== ($next = dirname($dir))
         ) {
             $dir = $next;
