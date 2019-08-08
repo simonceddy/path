@@ -2,7 +2,17 @@
 
 Path is a very simple library for registering filesystem path shortcuts.
 
-## Use
+## Installation
+
+Path can be installed with composer:
+
+```sh
+composer require simoneddy/path
+```
+
+## Example
+
+From example.php:
 
 ```php
 require 'vendor/autoload.php'; // Or wherever the autoloader is
