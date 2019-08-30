@@ -2,7 +2,7 @@
 require 'vendor/autoload.php'; // require autoloader
 
 // you can pass the root directory to the constructor
-$path = new Eddy\Path\Path(__DIR__);
+$path = new Eddy\Path\Path(__DIR__, true);
 
 // or Path will attempt to locate it
 $path = new Eddy\Path\Path(); // looks for vendor/autoload.php AND composer.json
@@ -18,9 +18,18 @@ var_dump($path->real('parent')); // equal to realpath(dirname(__DIR__))
 var_dump($path->get()); // equal to __DIR__
 var_dump($path->real()); // equal to realpath(__DIR__)
 
+// Both can also be used to resolve paths relative to the root dir, without
+// being registered as shortcuts:
+var_dump($path->get('vendor/autoload.php')); // "vendor/autoload.php"
+
 // Path contains a magic __toString method, which also returns the root path.
 var_dump("The root directory is {$path}");
 
 // Also provided are magic __get and __set methods for setting shortcuts like properties.
-$path->vendor = 'vendor';
-var_dump($path->real('vendor')); // returns equal to realpath(__DIR__ . '/vendor');
+$path->home = $_SERVER['HOME']; // Set to the users home dir for something different.
+var_dump($path->real('home')); // returns equal to realpath($_SERVER['HOME']);
+
+// Finally, Path can also be invoked.
+// Invoking without an argument will return the root directory.
+// Invoking with an argument will act identically to get().
+var_dump($path('vendor/autoload.php'));
