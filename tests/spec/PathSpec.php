@@ -38,13 +38,13 @@ class PathSpec extends ObjectBehavior
 
     function it_can_register_a_shortcut_to_a_path()
     {
-        $this->register(dirname(__FILE__), 'spec');
+        $this->register('spec', dirname(__FILE__));
         $this->get('spec')->shouldReturn(dirname(__FILE__));
     }
 
     function it_can_register_a_path_relative_to_root_dir()
     {
-        $this->register('tests/spec', 'spec');
+        $this->register('spec', 'tests/spec');
         $this->real('spec')->shouldReturn(dirname(__FILE__));
     }
 
@@ -64,5 +64,30 @@ class PathSpec extends ObjectBehavior
     function it_throws_a_path_exception_for_invalid_path()
     {
         $this->shouldThrow(PathException::class)->duringRegister('unknown', 'broke');
+    }
+
+    function it_can_find_paths_relative_to_shortcuts()
+    {
+        $this->register('spec', 'tests/spec');
+        $this->real('spec/PathSpec.php')->shouldBeEqualTo(realpath(__FILE__));
+    }
+
+    function it_can_toggle_realpath_for_magic_methods()
+    {
+        $this->beConstructedWith(dirname(__DIR__, 2), ['defaultToReal' => true]);
+        $this->v = 'vendor';
+        $this->v->shouldBeEqualTo(realpath(dirname(__DIR__, 2) . '/vendor'));
+
+        $this->defaultToReal(false);
+        $this->v->shouldBeEqualTo('vendor');
+    }
+
+    function it_can_set_a_custom_directory_separator()
+    {
+        $this->beConstructedWith(dirname(__DIR__, 2), ['delimiter' => '|']);
+        $this->real('vendor|autoload.php')->shouldBeEqualTo(dirname(__DIR__, 2) . '/vendor/autoload.php');
+
+        $this->register('composer', 'vendor|composer');
+        $this->real('composer')->shouldBeEqualTo(dirname(__DIR__, 2) . '/vendor/composer');
     }
 }

@@ -1,33 +1,99 @@
 <?php
 namespace Eddy\Path;
 
+use Eddy\Path\Support\RootDirLocator;
+
+/**
+ * Simple PHP library for managing relative filepaths and shortcuts.
+ * 
+ * @todo Split up code a little, spread responsibilities.
+ * 
+ * @package Path
+ * @author Simon Eddy <simon@simoneddy.com.au>
+ * @link https://github.com/simonceddy/path
+ * @license MIT
+ */
 class Path
 {
+    /**
+     * The path to the root directory
+     *
+     * @var string
+     */
     protected $rootDir;
 
+    /**
+     * Registered paths and shortcuts
+     *
+     * @var string[]|Path[]
+     */
     protected $paths = [];
 
+    /**
+     * Whether to use realpath for magic method access.
+     * 
+     * Defaults to false.
+     *
+     * @var bool
+     */
     protected $defaultToReal;
+
+    /**
+     * The symbol to use as the Directory Separator.
+     *
+     * @var string
+     */
+    protected $delimiter;
+
+    /**
+     * Whether to store paths as strings or instances of Path.
+     * 
+     * Defaults to false.
+     * 
+     * @todo Work in progress - currently does nothing
+     *
+     * @var bool
+     */
+    protected $pathInstances;
 
     /**
      * Create a new Path instance.
      *
-     * @param string $rootDir The application root directory, auto resolved if null.
-     * @param bool $defaultToReal If true, magic methods will always return realpath.
+     * @param string|null $rootDir The application root directory, auto resolved if null.
+     * @param bool|false $defaultToReal If true, magic methods will always return realpath.
      */
-    public function __construct(string $rootDir = null, bool $defaultToReal = false)
+    public function __construct(string $rootDir = null, array $settings = [])
     {
-        $this->defaultToReal = $defaultToReal;
+        $this->loadInitialSettings($settings);
         if (!is_dir($rootDir)) {
             $rootDir = (new RootDirLocator)->locate();
         }
         $this->rootDir = $rootDir;
     }
 
+    private function loadInitialSettings(array $settings)
+    {
+        $this->defaultToReal = isset(
+            $settings['defaultToReal']
+        ) && is_bool(
+            $v = $settings['defaultToReal']
+        ) ? $v : false;
+
+        $this->pathInstances = isset(
+            $settings['pathInstances']
+        ) && is_bool(
+            $v = $settings['pathInstances']
+        ) ? $v : false;
+        
+        $this->delimiter = isset(
+            $settings['delimiter']
+        ) && is_string(
+            $v = $settings['delimiter']
+        ) ? $v : DIRECTORY_SEPARATOR;
+    }
+
     /**
      * Internal method to return a valid path as a string.
-     *
-     * @internal Used for validating the existence of a path.
      * 
      * @param string $path
      *
@@ -44,6 +110,40 @@ class Path
         return $path;
     }
 
+    private function locateRelativeTo(string $path)
+    {
+        if (!strpos($path, DIRECTORY_SEPARATOR)) {
+            return false;
+        }
+
+        $bits = explode(DIRECTORY_SEPARATOR, $path);
+
+        $locating = array_shift($bits);
+
+        $resolved = false;
+
+        foreach ($bits as $bit) {
+            if ($this->isRegistered($locating)) {
+                $resolved = $this->get($locating);
+                break;
+            }
+            $locating .= DIRECTORY_SEPARATOR . array_shift($bits);
+        }
+
+        if (false !== $resolved && !empty($bits)) {
+            $resolved = $this->getValidPath(
+                $resolved . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $bits)
+            );
+        }
+    
+        return $resolved;
+    }
+
+    private function transformDelimiter(string $path)
+    {
+        return str_replace($this->delimiter, DIRECTORY_SEPARATOR, $path);
+    }
+
     /**
      * Checks if a path is registered.
      * 
@@ -53,7 +153,7 @@ class Path
      *
      * @return bool
      */
-    public function has(string $path)
+    public function isRegistered(string $path)
     {
         return isset($this->paths[$path])
             || in_array($path, $this->paths);
@@ -74,17 +174,23 @@ class Path
             return $this->rootDir;
         }
 
-        if ($this->has($path)) {
+        if (DIRECTORY_SEPARATOR !== $this->delimiter) {
+            $path = $this->transformDelimiter($path);
+        }
+
+        if ($this->isRegistered($path)) {
             return $this->paths[$path];
         }
 
-        $path = $this->getValidPath($path);
+        $resolved = $this->getValidPath($path);
         
-        if (!$path) {
+        if (!$resolved
+            && !($resolved = $this->locateRelativeTo($path))
+        ) {
             throw new PathException("Could not locate {$path}.");
         }
 
-        return $path;
+        return $resolved;
     }
 
     /**
@@ -97,15 +203,22 @@ class Path
      * 
      * @throws PathException
      */
-    public function register(string $path, string $shortcut = null)
+    public function register(string $path, string $filepath = null)
     {
-        $path = $this->getValidPath($path);
-        
-        if (!$path) {
-            throw new PathException("Could not locate {$path}.");
+        null !== $filepath ?: $filepath = $path;
+
+        if (DIRECTORY_SEPARATOR !== $this->delimiter) {
+            $filepath = $this->transformDelimiter($filepath);
+            $path = $this->transformDelimiter($path);
         }
 
-        $this->paths[$shortcut ?? $path] = $path;
+        $resolved = $this->getValidPath($filepath);
+        
+        if (!$resolved) {
+            throw new PathException("Could not locate {$filepath}.");
+        }
+
+        $this->paths[$path] = $resolved;
 
         return $this;
     }
@@ -156,7 +269,7 @@ class Path
      */
     public function __set(string $shortcut, string $path)
     {
-        return $this->register($path, $shortcut);
+        return $this->register($shortcut, $path);
     }
 
     public function __invoke(string $path = null)
@@ -164,25 +277,45 @@ class Path
         return $this->defaultToReal ? $this->real($path) : $this->get($path);
     }
 
+    public function __call(string $path, array $args = [])
+    {
+        if (isset($args[0]) && is_string($args[0])) {
+            $path .= DIRECTORY_SEPARATOR . $args[0];
+        }
+        return $this->defaultToReal ? $this->real($path) : $this->get($path);
+    }
+
     /**
      * Set if magic methods should always return realpath.
      * 
      * Applies only to __get, __invoke and __toString.
-     * 
-     * If no argument is supplied, this method will act as a toggle, with each
-     * call inverting the previous setting (e.g. true to false, visa versa).
-     * 
-     * Supplying a boolean argument will use that boolean, regardless of the
-     * current settings.
      *
-     * @param bool|null $defaultToReal
+     * @param bool|true $defaultToReal
      * 
      * @return  self
      */ 
-    public function defaultToReal(bool $defaultToReal = null)
+    public function defaultToReal(bool $defaultToReal = true)
     {
-        $this->defaultToReal = $defaultToReal ?? !$this->defaultToReal;
+        $this->defaultToReal = $defaultToReal;
 
         return $this;
+    }
+
+    public function makePath(string $path, string $filepath = null)
+    {
+        null !== $filepath ?: $filepath = $path;
+        $newPath = $this->factory($filepath);
+        $this->paths[$path] = $newPath;
+        return $this->paths[$path];
+    }
+
+    public function factory(string $path)
+    {
+        try {
+            $newPath = new static($this->real($path));
+            return $newPath;
+        } catch (PathException $e) {
+            throw $e;
+        }
     }
 }
