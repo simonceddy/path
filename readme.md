@@ -68,7 +68,7 @@ var_dump($path->home('Documents/dev')); // same as $path->get('home/Documents/de
 By default, magic methods will wrap the `get()` method. You can change the default behaviour to always providing `realpath` by either:
 
 - Having `'defaultToReal'` set to `true` in the optional settings array available as the constructors second argument,
-- Using the `defaultToReal()` method, which accepts either true or false, or acts as a toggle between the two.
+- Using the `defaultToReal()` method, which accepts an optional boolean or defaults to `true`.
 
 ```php
 // Setting defaultToReal to true in the constructor:
