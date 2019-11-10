@@ -1,7 +1,7 @@
 <?php
 namespace Eddy\Path;
 
-class Path
+class Path implements \ArrayAccess
 {
     /**
      * The root path
@@ -142,6 +142,42 @@ class Path
         }
 
         return $resolvedPath;
+    }
+
+    /**
+     * Remove a shortcut.
+     * 
+     * This method only unregisters a shortcut and has no effect on the
+     * filesystem.
+     *
+     * @param string $name
+     *
+     * @return self
+     */
+    public function remove($name)
+    {
+        unset($this->shortcuts[$name]);
+        return $this;
+    }
+
+    public function offsetExists($offset)
+    {
+        return $this->has($offset);
+    }
+
+    public function offsetGet($offset)
+    {
+        return $this->get($offset);
+    }
+
+    public function offsetSet($offset, $value)
+    {
+        $this->set($offset, $value);
+    }
+
+    public function offsetUnset($offset)
+    {
+        $this->remove($offset);
     }
 
     /**
